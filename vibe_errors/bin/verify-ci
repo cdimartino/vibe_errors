@@ -1,0 +1,365 @@
+#!/usr/bin/env bash
+
+# Verification script for CI/CD pipeline
+# This script verifies that the CI pipeline setup is working correctly
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+  local status=$1
+  local message=$2
+  case $status in
+    "info")
+      echo -e "${BLUE}[INFO]${NC} $message"
+      ;;
+    "success")
+      echo -e "${GREEN}[SUCCESS]${NC} $message"
+      ;;
+    "error")
+      echo -e "${RED}[ERROR]${NC} $message"
+      ;;
+    "warning")
+      echo -e "${YELLOW}[WARNING]${NC} $message"
+      ;;
+  esac
+}
+
+# Function to check if file exists
+check_file() {
+  local file=$1
+  local description=$2
+  
+  if [ -f "$file" ]; then
+    print_status "success" "✓ $description: $file"
+    return 0
+  else
+    print_status "error" "✗ $description: $file (missing)"
+    return 1
+  fi
+}
+
+# Function to check if directory exists
+check_directory() {
+  local dir=$1
+  local description=$2
+  
+  if [ -d "$dir" ]; then
+    print_status "success" "✓ $description: $dir"
+    return 0
+  else
+    print_status "error" "✗ $description: $dir (missing)"
+    return 1
+  fi
+}
+
+# Function to validate YAML syntax
+validate_yaml() {
+  local file=$1
+  
+  if command -v ruby >/dev/null 2>&1; then
+    if ruby -ryaml -e "YAML.load_file('$file')" >/dev/null 2>&1; then
+      print_status "success" "✓ Valid YAML syntax: $file"
+      return 0
+    else
+      print_status "error" "✗ Invalid YAML syntax: $file"
+      return 1
+    fi
+  else
+    print_status "warning" "Cannot validate YAML (Ruby not available): $file"
+    return 0
+  fi
+}
+
+# Function to check GitHub Actions workflow files
+check_workflows() {
+  print_status "info" "Checking GitHub Actions workflows..."
+  
+  local workflows_dir=".github/workflows"
+  local errors=0
+  
+  if ! check_directory "$workflows_dir" "GitHub Actions workflows directory"; then
+    ((errors++))
+    return $errors
+  fi
+  
+  # Check required workflow files
+  local required_workflows=(
+    "ci.yml"
+    "release.yml"
+    "codeql.yml"
+    "dependency-review.yml"
+    "stale.yml"
+  )
+  
+  for workflow in "${required_workflows[@]}"; do
+    local file="$workflows_dir/$workflow"
+    if ! check_file "$file" "GitHub Actions workflow"; then
+      ((errors++))
+    else
+      if ! validate_yaml "$file"; then
+        ((errors++))
+      fi
+    fi
+  done
+  
+  return $errors
+}
+
+# Function to check configuration files
+check_configs() {
+  print_status "info" "Checking configuration files..."
+  
+  local configs=(
+    ".github/dependabot.yml:Dependabot configuration"
+    ".codeclimate.yml:CodeClimate configuration"
+    ".simplecov:SimpleCov configuration"
+    ".standard.yml:StandardRB configuration"
+    ".rubocop.yml:RuboCop configuration"
+    ".reek.yml:Reek configuration"
+    ".brakeman.yml:Brakeman configuration"
+  )
+  
+  local errors=0
+  
+  for config in "${configs[@]}"; do
+    local file="${config%:*}"
+    local description="${config#*:}"
+    
+    if ! check_file "$file" "$description"; then
+      ((errors++))
+    else
+      if [[ "$file" == *.yml ]] || [[ "$file" == *.yaml ]]; then
+        if ! validate_yaml "$file"; then
+          ((errors++))
+        fi
+      fi
+    fi
+  done
+  
+  return $errors
+}
+
+# Function to check Docker files
+check_docker() {
+  print_status "info" "Checking Docker configuration..."
+  
+  local docker_files=(
+    "Dockerfile:Docker container definition"
+    "docker-compose.yml:Docker Compose configuration"
+  )
+  
+  local errors=0
+  
+  for docker_file in "${docker_files[@]}"; do
+    local file="${docker_file%:*}"
+    local description="${docker_file#*:}"
+    
+    if ! check_file "$file" "$description"; then
+      ((errors++))
+    fi
+  done
+  
+  # Check if Docker Compose YAML is valid
+  if [ -f "docker-compose.yml" ]; then
+    if ! validate_yaml "docker-compose.yml"; then
+      ((errors++))
+    fi
+  fi
+  
+  return $errors
+}
+
+# Function to check issue templates
+check_templates() {
+  print_status "info" "Checking issue and PR templates..."
+  
+  local templates=(
+    ".github/ISSUE_TEMPLATE/bug_report.yml:Bug report template"
+    ".github/ISSUE_TEMPLATE/feature_request.yml:Feature request template"
+    ".github/pull_request_template.md:Pull request template"
+  )
+  
+  local errors=0
+  
+  for template in "${templates[@]}"; do
+    local file="${template%:*}"
+    local description="${template#*:}"
+    
+    if ! check_file "$file" "$description"; then
+      ((errors++))
+    elif [[ "$file" == *.yml ]]; then
+      if ! validate_yaml "$file"; then
+        ((errors++))
+      fi
+    fi
+  done
+  
+  return $errors
+}
+
+# Function to check CI scripts
+check_scripts() {
+  print_status "info" "Checking CI scripts..."
+  
+  local scripts=(
+    "bin/ci:CI runner script"
+    "bin/verify-ci:CI verification script"
+  )
+  
+  local errors=0
+  
+  for script in "${scripts[@]}"; do
+    local file="${script%:*}"
+    local description="${script#*:}"
+    
+    if ! check_file "$file" "$description"; then
+      ((errors++))
+    elif [ -f "$file" ] && [ ! -x "$file" ]; then
+      print_status "warning" "Script not executable: $file"
+    fi
+  done
+  
+  return $errors
+}
+
+# Function to check gem dependencies
+check_dependencies() {
+  print_status "info" "Checking gem dependencies..."
+  
+  local errors=0
+  
+  if ! check_file "Gemfile" "Ruby dependencies"; then
+    ((errors++))
+  fi
+  
+  if ! check_file "vibe_errors.gemspec" "Gem specification"; then
+    ((errors++))
+  fi
+  
+  # Check if bundle install works
+  if command -v bundle >/dev/null 2>&1; then
+    print_status "info" "Testing bundle install..."
+    if bundle check >/dev/null 2>&1; then
+      print_status "success" "✓ Bundle dependencies satisfied"
+    else
+      print_status "warning" "Bundle dependencies not satisfied (run 'bundle install')"
+    fi
+  else
+    print_status "warning" "Bundler not available"
+  fi
+  
+  return $errors
+}
+
+# Function to run a quick CI test
+run_quick_test() {
+  print_status "info" "Running quick CI test..."
+  
+  local errors=0
+  
+  # Check if CI script exists and is executable
+  if [ -x "bin/ci" ]; then
+    print_status "info" "Testing CI script..."
+    
+    # Run a quick quality check
+    if ./bin/ci quality 2>/dev/null; then
+      print_status "success" "✓ CI script quality check passed"
+    else
+      print_status "error" "✗ CI script quality check failed"
+      ((errors++))
+    fi
+  else
+    print_status "error" "✗ CI script not found or not executable"
+    ((errors++))
+  fi
+  
+  return $errors
+}
+
+# Main verification function
+main() {
+  print_status "info" "Starting CI/CD pipeline verification..."
+  echo ""
+  
+  local total_errors=0
+  
+  # Run all checks
+  check_workflows
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  check_configs
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  check_docker
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  check_templates
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  check_scripts
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  check_dependencies
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  run_quick_test
+  total_errors=$((total_errors + $?))
+  echo ""
+  
+  # Summary
+  if [ $total_errors -eq 0 ]; then
+    print_status "success" "🎉 All CI/CD pipeline checks passed!"
+    print_status "info" "Your CI/CD pipeline is ready for GitHub Actions."
+    exit 0
+  else
+    print_status "error" "❌ CI/CD pipeline verification failed with $total_errors errors."
+    print_status "info" "Please fix the issues above before pushing to GitHub."
+    exit 1
+  fi
+}
+
+# Help function
+show_help() {
+  echo "VibeErrors CI/CD Pipeline Verification Script"
+  echo ""
+  echo "This script verifies that all CI/CD pipeline components are properly configured."
+  echo ""
+  echo "Usage: $0 [--help]"
+  echo ""
+  echo "The script checks:"
+  echo "  - GitHub Actions workflow files"
+  echo "  - Configuration files for code quality tools"
+  echo "  - Docker configuration"
+  echo "  - Issue and PR templates"
+  echo "  - CI scripts"
+  echo "  - Dependencies"
+  echo ""
+  echo "Exit codes:"
+  echo "  0 - All checks passed"
+  echo "  1 - One or more checks failed"
+}
+
+# Handle command line arguments
+case "${1:-}" in
+  "--help"|"-h")
+    show_help
+    exit 0
+    ;;
+  *)
+    main
+    ;;
+esac

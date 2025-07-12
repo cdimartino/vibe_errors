@@ -1,0 +1,153 @@
+# Reek configuration for VibeErrors engine
+# See https://github.com/troessner/reek for configuration options
+
+exclude_paths:
+  - db/
+  - bin/
+  - vendor/
+  - node_modules/
+  - tmp/
+  - log/
+  - spec/dummy/
+  - lib/generators/vibe_errors/install/templates/
+
+detectors:
+  # Disable some detectors that are too strict for Rails apps
+  IrresponsibleModule:
+    enabled: false
+  
+  # Allow longer parameter lists for controller actions
+  LongParameterList:
+    max_params: 6
+    
+  # Allow more complex methods
+  TooManyMethods:
+    max_methods: 20
+    
+  # Allow more instance variables in controllers
+  TooManyInstanceVariables:
+    max_instance_variables: 8
+    
+  # Allow some duplication in tests
+  DuplicateMethodCall:
+    enabled: false
+    
+  # Allow longer methods in some cases
+  TooManyStatements:
+    max_statements: 15
+    
+  # Allow some uncommunicative names that are common in Rails
+  UncommunicativeVariableName:
+    reject:
+      - '/^[a-z]$/'
+      - '/[0-9]$/'
+      - '/[A-Z]/'
+    accept:
+      - id
+      - e
+      - i
+      - j
+      - k
+      - ex
+      - db
+      - ui
+      - fs
+      - io
+      - fh
+      - fd
+      - ap
+      - ip
+      - os
+      - cp
+      - mv
+      - rm
+      - ls
+      - cd
+      - up
+      - tv
+      - sd
+      - hd
+      - js
+      - css
+      - html
+      - xml
+      - json
+      - yaml
+      - yml
+      - sql
+      - csv
+      - pdf
+      - jpg
+      - png
+      - gif
+      - svg
+      - ico
+      - zip
+      - tar
+      - gz
+      - bz2
+      - xz
+      - log
+      - txt
+      - md
+      - rst
+      - tex
+      - doc
+      - docx
+      - ppt
+      - pptx
+      - xls
+      - xlsx
+      - odt
+      - ods
+      - odp
+      - rtf
+      - ps
+      - eps
+      - ai
+      - psd
+      - tiff
+      - tif
+      - bmp
+      - raw
+      - cr2
+      - nef
+      - orf
+      - sr2
+      - dng
+      - arw
+      - raf
+      - x3f
+      - rw2
+      - rwl
+      - srw
+      - erf
+      - pef
+      - iiq
+      - 3fr
+      - fff
+      - dcr
+      - kdc
+      - mef
+      - mos
+      - mrw
+      - nrw
+      - ptx
+      - r3d
+      - raf
+      - rw2
+      - rwl
+      - srw
+      - x3f
+      
+  # Allow nested iterators in some cases
+  NestedIterators:
+    max_allowed_nesting: 2
+    
+  # Allow some feature envy in controllers (talking to models)
+  FeatureEnvy:
+    enabled: false
+    
+  # Allow utility modules without instance methods
+  UtilityFunction:
+    enabled: false

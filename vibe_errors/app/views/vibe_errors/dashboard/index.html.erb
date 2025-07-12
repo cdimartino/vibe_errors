@@ -1,0 +1,149 @@
+<h1>Dashboard</h1>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body">
+        <h5 class="card-title">Total Errors</h5>
+        <h2><%= @stats[:total_errors] %></h2>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card bg-danger text-white">
+      <div class="card-body">
+        <h5 class="card-title">Unresolved Errors</h5>
+        <h2><%= @stats[:unresolved_errors] %></h2>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body">
+        <h5 class="card-title">Critical Errors</h5>
+        <h2><%= @stats[:critical_errors] %></h2>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body">
+        <h5 class="card-title">Errors Today</h5>
+        <h2><%= @stats[:errors_today] %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Errors by Severity</h5>
+      </div>
+      <div class="card-body">
+        <% @error_stats_by_severity.each do |severity, count| %>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-<%= severity_color(severity) %>"><%= severity.capitalize %></span>
+            <span><%= count %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Errors by Status</h5>
+      </div>
+      <div class="card-body">
+        <% @error_stats_by_status.each do |status, count| %>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-<%= status_color(status) %>"><%= status.humanize %></span>
+            <span><%= count %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Recent Errors</h5>
+        <%= link_to "View All", errors_path, class: "btn btn-sm btn-outline-primary float-end" %>
+      </div>
+      <div class="card-body">
+        <% if @recent_errors.any? %>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Message</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Owner</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @recent_errors.each do |error| %>
+                  <tr>
+                    <td>
+                      <%= link_to truncate(error.message, length: 50), error_path(error) %>
+                    </td>
+                    <td>
+                      <span class="badge bg-<%= severity_color(error.severity) %>">
+                        <%= error.severity.capitalize %>
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge bg-<%= status_color(error.status) %>">
+                        <%= error.status.humanize %>
+                      </span>
+                    </td>
+                    <td><%= error.owner&.name || "Unassigned" %></td>
+                    <td><%= time_ago_in_words(error.created_at) %> ago</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <p class="text-muted">No errors found.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Popular Tags</h5>
+      </div>
+      <div class="card-body">
+        <% if @popular_tags.any? %>
+          <% @popular_tags.each do |tag| %>
+            <span class="badge bg-secondary me-1 mb-1">
+              <%= link_to tag.name, tag_path(tag), class: "text-white text-decoration-none" %>
+            </span>
+          <% end %>
+        <% else %>
+          <p class="text-muted">No tags found.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% content_for :javascript do %>
+<script>
+  // Add any dashboard-specific JavaScript here
+</script>
+<% end %>

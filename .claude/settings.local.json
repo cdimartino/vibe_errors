@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(ruby --version)",
+      "Bash(gem --version)",
+      "Bash(bundle --version)",
+      "Bash(rails --version)",
+      "Bash(mise install:*)",
+      "Bash(bundle install:*)",
+      "Bash(mise use:*)",
+      "Bash(ruby:*)",
+      "Bash(eval \"$(mise activate bash)\")",
+      "Bash(bundle exec standard:*)",
+      "Bash(bundle list:*)",
+      "Bash(standard:*)",
+      "Bash(bundle exec rubocop:*)",
+      "Bash(bundle exec reek:*)",
+      "Bash(bundle exec brakeman:*)",
+      "Bash(chmod:*)",
+      "Bash(./bin/verify-ci)",
+      "Bash(git init:*)"
+    ],
+    "deny": []
+  }
+}

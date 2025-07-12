@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sqlite3 libsqlite3-dev
+    
+    - name: Bundle install
+      run: bundle install --jobs 4 --retry 3
+    
+    - name: Run full test suite
+      run: |
+        bundle exec rspec
+        bundle exec standardrb
+        bundle exec brakeman --quiet
+    
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Update version file
+      run: |
+        echo "module VibeErrors" > lib/vibe_errors/version.rb
+        echo "  VERSION = \"${{ steps.version.outputs.VERSION }}\"" >> lib/vibe_errors/version.rb
+        echo "end" >> lib/vibe_errors/version.rb
+    
+    - name: Build gem
+      run: |
+        gem build vibe_errors.gemspec
+        ls -la *.gem
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Simple changelog generation from git commits
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -n "$PREVIOUS_TAG" ]; then
+          CHANGES=$(git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep -v "^- Merge" | head -20)
+        else
+          CHANGES=$(git log --pretty=format:"- %s" --max-count=20 | grep -v "^- Merge")
+        fi
+        
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        echo "## What's Changed" >> $GITHUB_OUTPUT
+        echo "$CHANGES" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "**Full Changelog**: https://github.com/vibeerrors/vibe_errors/compare/$PREVIOUS_TAG...v${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: vibe_errors-*.gem
+        body: ${{ steps.changelog.outputs.CHANGELOG }}
+        generate_release_notes: true
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.VERSION, 'rc') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'alpha') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Publish to RubyGems
+      run: |
+        mkdir -p ~/.gem
+        echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
+        chmod 600 ~/.gem/credentials
+        gem push vibe_errors-*.gem
+      env:
+        RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+    
+    - name: Create Docker image
+      run: |
+        # Create a simple Dockerfile for the sample app
+        cat > Dockerfile << 'EOF'
+        FROM ruby:3.3-slim
+        
+        WORKDIR /app
+        
+        # Install system dependencies
+        RUN apt-get update && apt-get install -y \
+          build-essential \
+          libsqlite3-dev \
+          nodejs \
+          npm \
+          git \
+          && rm -rf /var/lib/apt/lists/*
+        
+        # Copy engine files
+        COPY . .
+        
+        # Install Ruby dependencies
+        RUN bundle install
+        
+        # Set up sample app
+        WORKDIR /app/sample_app
+        RUN bundle install
+        RUN bundle exec rails db:create
+        RUN bundle exec rails db:migrate
+        RUN bundle exec rails generate vibe_errors:install
+        RUN bundle exec rails db:migrate
+        
+        EXPOSE 3000
+        
+        CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+        EOF
+    
+    - name: Build and push Docker image
+      if: secrets.DOCKER_HUB_USERNAME != ''
+      run: |
+        echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+        docker build -t vibeerrors/vibe_errors:${{ steps.version.outputs.VERSION }} .
+        docker build -t vibeerrors/vibe_errors:latest .
+        docker push vibeerrors/vibe_errors:${{ steps.version.outputs.VERSION }}
+        docker push vibeerrors/vibe_errors:latest
+      env:
+        DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+        DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}

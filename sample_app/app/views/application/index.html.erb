@@ -1,0 +1,179 @@
+<div class="container mt-4">
+  <h1>VibeErrors Demo Application</h1>
+  
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="alert alert-info">
+        <h5>Welcome to the VibeErrors Demo!</h5>
+        <p>This sample application demonstrates the VibeErrors engine in action. You can simulate errors, log messages, and view the error tracking dashboard.</p>
+        <p><strong><%= link_to "Visit VibeErrors Dashboard", "/vibe_errors", class: "btn btn-primary" %></strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h5>Total Errors</h5>
+          <h2><%= @stats[:total_errors] %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h5>Total Messages</h5>
+          <h2><%= @stats[:total_messages] %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h5>Quick Access</h5>
+          <%= link_to "View Dashboard", "/vibe_errors", class: "btn btn-light" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo Actions -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5>Simulate Errors</h5>
+        </div>
+        <div class="card-body">
+          <p>Test the error capturing functionality by simulating different types of errors:</p>
+          
+          <%= form_with url: simulate_error_path, method: :post, local: true, class: "mb-2" do |form| %>
+            <%= form.hidden_field :type, value: "database" %>
+            <%= form.submit "Simulate Database Error", class: "btn btn-danger btn-sm" %>
+          <% end %>
+          
+          <%= form_with url: simulate_error_path, method: :post, local: true, class: "mb-2" do |form| %>
+            <%= form.hidden_field :type, value: "api" %>
+            <%= form.submit "Simulate API Timeout", class: "btn btn-warning btn-sm" %>
+          <% end %>
+          
+          <%= form_with url: simulate_error_path, method: :post, local: true, class: "mb-2" do |form| %>
+            <%= form.hidden_field :type, value: "authentication" %>
+            <%= form.submit "Simulate Auth Error", class: "btn btn-info btn-sm" %>
+          <% end %>
+          
+          <%= form_with url: simulate_error_path, method: :post, local: true, class: "mb-2" do |form| %>
+            <%= form.submit "Simulate Generic Error", class: "btn btn-secondary btn-sm" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5>Log Messages</h5>
+        </div>
+        <div class="card-body">
+          <p>Test the message logging functionality:</p>
+          
+          <%= form_with url: log_message_path, method: :post, local: true, class: "mb-3" do |form| %>
+            <div class="mb-2">
+              <%= form.text_field :content, placeholder: "Enter message content...", class: "form-control" %>
+            </div>
+            <div class="mb-2">
+              <%= form.select :message_type, 
+                             options_for_select([
+                               ["Info", "info"],
+                               ["Warning", "warning"],
+                               ["Error", "error"]
+                             ]), 
+                             {}, { class: "form-select" } %>
+            </div>
+            <%= form.submit "Log Message", class: "btn btn-success btn-sm" %>
+          <% end %>
+          
+          <hr>
+          
+          <%= form_with url: log_message_path, method: :post, local: true, class: "mb-1" do |form| %>
+            <%= form.hidden_field :message_type, value: "info" %>
+            <%= form.hidden_field :content, value: "User performed successful action" %>
+            <%= form.submit "Quick Info Log", class: "btn btn-outline-info btn-sm" %>
+          <% end %>
+          
+          <%= form_with url: log_message_path, method: :post, local: true, class: "mb-1" do |form| %>
+            <%= form.hidden_field :message_type, value: "warning" %>
+            <%= form.hidden_field :content, value: "Potential issue detected" %>
+            <%= form.submit "Quick Warning Log", class: "btn btn-outline-warning btn-sm" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Errors -->
+  <% if @stats[:recent_errors].any? %>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h5>Recent Errors</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Message</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @stats[:recent_errors].each do |error| %>
+                    <tr>
+                      <td><%= truncate(error.message, length: 50) %></td>
+                      <td>
+                        <span class="badge bg-<%= error.severity == 'critical' ? 'dark' : (error.severity == 'high' ? 'danger' : (error.severity == 'medium' ? 'warning' : 'info')) %>">
+                          <%= error.severity.capitalize %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge bg-<%= error.status == 'resolved' ? 'success' : (error.status == 'in_progress' ? 'warning' : 'primary') %>">
+                          <%= error.status.humanize %>
+                        </span>
+                      </td>
+                      <td><%= time_ago_in_words(error.created_at) %> ago</td>
+                      <td>
+                        <%= link_to "View", "/vibe_errors/errors/#{error.id}", class: "btn btn-outline-primary btn-sm" %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-2">
+              <%= link_to "View All Errors", "/vibe_errors/errors", class: "btn btn-outline-primary" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="alert alert-secondary">
+          <h5>No Errors Yet</h5>
+          <p>No errors have been captured yet. Try simulating some errors using the buttons above to see VibeErrors in action!</p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

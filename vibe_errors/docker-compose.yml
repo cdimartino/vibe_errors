@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  vibe_errors:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - RAILS_ENV=development
+      - DATABASE_URL=sqlite3:///app/db/development.sqlite3
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    depends_on:
+      - redis
+      - postgres
+    command: bash -c "cd sample_app && bundle install && bundle exec rails db:create && bundle exec rails db:migrate && bundle exec rails generate vibe_errors:install && bundle exec rails db:migrate && bundle exec rails server -b 0.0.0.0"
+    
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=vibe_errors_development
+      - POSTGRES_USER=vibe_errors
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - RAILS_ENV=test
+      - DATABASE_URL=sqlite3:///app/db/test.sqlite3
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    command: bash -c "bundle exec rspec && bundle exec standardrb && bundle exec brakeman --quiet"
+    depends_on:
+      - postgres
+      - redis
+    
+  quality:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - RAILS_ENV=development
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    command: bash -c "bundle exec standardrb && bundle exec rubocop && bundle exec reek && bundle exec brakeman --quiet"
+
+volumes:
+  postgres_data:
+  redis_data:
+  bundle:

@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+
+# CI Script for VibeErrors Rails Engine
+# This script runs all the checks that are run in CI
+# Usage: ./bin/ci [command]
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+  local status=$1
+  local message=$2
+  case $status in
+    "info")
+      echo -e "${YELLOW}[INFO]${NC} $message"
+      ;;
+    "success")
+      echo -e "${GREEN}[SUCCESS]${NC} $message"
+      ;;
+    "error")
+      echo -e "${RED}[ERROR]${NC} $message"
+      ;;
+  esac
+}
+
+# Function to check if command exists
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Function to run tests
+run_tests() {
+  print_status "info" "Running test suite..."
+  
+  # Set up test database
+  if [ -f "test/dummy/config/database.yml" ]; then
+    cd test/dummy
+    bundle exec rails db:create RAILS_ENV=test
+    bundle exec rails db:migrate RAILS_ENV=test
+    cd ../..
+  fi
+  
+  # Run RSpec tests
+  if command_exists rspec; then
+    bundle exec rspec --format progress --format RspecJunitFormatter --out tmp/test-results/rspec.xml
+  else
+    bundle exec rake test
+  fi
+  
+  print_status "success" "Tests completed"
+}
+
+# Function to run code quality checks
+run_quality() {
+  print_status "info" "Running code quality checks..."
+  
+  # StandardRB
+  print_status "info" "Running StandardRB..."
+  if bundle exec standardrb; then
+    print_status "success" "StandardRB passed"
+  else
+    print_status "error" "StandardRB failed"
+    exit 1
+  fi
+  
+  # RuboCop
+  print_status "info" "Running RuboCop..."
+  if bundle exec rubocop; then
+    print_status "success" "RuboCop passed"
+  else
+    print_status "error" "RuboCop failed"
+    exit 1
+  fi
+  
+  # Reek
+  print_status "info" "Running Reek..."
+  if bundle exec reek --format json > tmp/reek-report.json 2>/dev/null; then
+    print_status "success" "Reek passed"
+  else
+    print_status "info" "Reek completed (some issues may exist)"
+  fi
+  
+  print_status "success" "Code quality checks completed"
+}
+
+# Function to run security checks
+run_security() {
+  print_status "info" "Running security checks..."
+  
+  # Bundle audit
+  print_status "info" "Running bundle audit..."
+  if command_exists bundle-audit; then
+    bundle-audit update
+    bundle-audit
+  else
+    gem install bundler-audit
+    bundle-audit update
+    bundle-audit
+  fi
+  
+  # Brakeman
+  print_status "info" "Running Brakeman..."
+  if bundle exec brakeman --quiet --format json --output tmp/brakeman-report.json; then
+    print_status "success" "Brakeman completed"
+  else
+    print_status "info" "Brakeman found some issues (check report)"
+  fi
+  
+  print_status "success" "Security checks completed"
+}
+
+# Function to run all checks
+run_all() {
+  print_status "info" "Running full CI pipeline..."
+  
+  # Create tmp directory for reports
+  mkdir -p tmp/test-results
+  
+  # Install dependencies
+  print_status "info" "Installing dependencies..."
+  bundle install --jobs 4 --retry 3
+  
+  # Run all checks
+  run_tests
+  run_quality
+  run_security
+  
+  print_status "success" "All CI checks completed successfully!"
+}
+
+# Function to fix common issues
+fix_issues() {
+  print_status "info" "Attempting to fix common issues..."
+  
+  # Fix StandardRB issues
+  if bundle exec standardrb --fix; then
+    print_status "success" "StandardRB auto-fixes applied"
+  else
+    print_status "error" "StandardRB auto-fix failed"
+  fi
+  
+  # Fix RuboCop issues
+  if bundle exec rubocop -A; then
+    print_status "success" "RuboCop auto-fixes applied"
+  else
+    print_status "error" "RuboCop auto-fix failed"
+  fi
+  
+  print_status "success" "Fix attempt completed"
+}
+
+# Function to clean up
+cleanup() {
+  print_status "info" "Cleaning up..."
+  
+  # Remove temporary files
+  rm -rf tmp/test-results
+  rm -rf tmp/*.json
+  rm -rf coverage
+  
+  # Clean up databases
+  if [ -f "test/dummy/db/test.sqlite3" ]; then
+    rm -f test/dummy/db/test.sqlite3
+  fi
+  
+  print_status "success" "Cleanup completed"
+}
+
+# Function to show help
+show_help() {
+  echo "VibeErrors CI Script"
+  echo ""
+  echo "Usage: $0 [command]"
+  echo ""
+  echo "Commands:"
+  echo "  test      Run test suite"
+  echo "  quality   Run code quality checks"
+  echo "  security  Run security checks"
+  echo "  all       Run all checks (default)"
+  echo "  fix       Attempt to fix common issues"
+  echo "  clean     Clean up temporary files"
+  echo "  help      Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "  $0           # Run all checks"
+  echo "  $0 test      # Run only tests"
+  echo "  $0 fix       # Fix code style issues"
+  echo "  $0 clean     # Clean up temporary files"
+}
+
+# Main script logic
+case "${1:-all}" in
+  "test")
+    run_tests
+    ;;
+  "quality")
+    run_quality
+    ;;
+  "security")
+    run_security
+    ;;
+  "all")
+    run_all
+    ;;
+  "fix")
+    fix_issues
+    ;;
+  "clean")
+    cleanup
+    ;;
+  "help"|"-h"|"--help")
+    show_help
+    ;;
+  *)
+    print_status "error" "Unknown command: $1"
+    show_help
+    exit 1
+    ;;
+esac

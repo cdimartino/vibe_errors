@@ -1,0 +1,202 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><%= error_icon(@error.severity) %> Error #<%= @error.id %></h1>
+  <div class="btn-group">
+    <%= link_to "Edit", edit_error_path(@error), class: "btn btn-outline-primary" %>
+    <% unless @error.resolved? %>
+      <%= link_to "Resolve", resolve_error_path(@error), 
+                 method: :patch, class: "btn btn-success",
+                 data: { confirm: "Are you sure?" } %>
+    <% end %>
+    <%= link_to "Delete", error_path(@error), method: :delete, 
+               class: "btn btn-outline-danger",
+               data: { confirm: "Are you sure?" } %>
+  </div>
+</div>
+
+<!-- Error Details -->
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5>Error Details</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row">
+          <dt class="col-sm-3">Message:</dt>
+          <dd class="col-sm-9"><%= @error.message %></dd>
+          
+          <dt class="col-sm-3">Exception Class:</dt>
+          <dd class="col-sm-9"><%= @error.exception_class || "N/A" %></dd>
+          
+          <dt class="col-sm-3">Severity:</dt>
+          <dd class="col-sm-9">
+            <span class="badge bg-<%= severity_color(@error.severity) %>">
+              <%= @error.severity.capitalize %>
+            </span>
+          </dd>
+          
+          <dt class="col-sm-3">Status:</dt>
+          <dd class="col-sm-9">
+            <span class="badge bg-<%= status_color(@error.status) %>">
+              <%= @error.status.humanize %>
+            </span>
+          </dd>
+          
+          <dt class="col-sm-3">Priority:</dt>
+          <dd class="col-sm-9">
+            <% if @error.priority.present? %>
+              <span class="badge bg-<%= priority_color(@error.priority) %>">
+                <%= @error.priority.capitalize %>
+              </span>
+            <% else %>
+              <span class="text-muted">None</span>
+            <% end %>
+          </dd>
+          
+          <dt class="col-sm-3">Location:</dt>
+          <dd class="col-sm-9"><%= @error.location || "N/A" %></dd>
+          
+          <dt class="col-sm-3">Occurred At:</dt>
+          <dd class="col-sm-9"><%= @error.occurred_at || "N/A" %></dd>
+          
+          <dt class="col-sm-3">Created:</dt>
+          <dd class="col-sm-9"><%= time_ago_with_tooltip(@error.created_at) %></dd>
+          
+          <dt class="col-sm-3">Updated:</dt>
+          <dd class="col-sm-9"><%= time_ago_with_tooltip(@error.updated_at) %></dd>
+          
+          <% if @error.resolved? %>
+            <dt class="col-sm-3">Resolved At:</dt>
+            <dd class="col-sm-9"><%= time_ago_with_tooltip(@error.resolved_at) %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+    
+    <!-- Stack Trace -->
+    <% if @error.stack_trace.present? %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5>Stack Trace</h5>
+        </div>
+        <div class="card-body">
+          <pre class="bg-light p-3 rounded"><%= format_stack_trace(@error.stack_trace) %></pre>
+        </div>
+      </div>
+    <% end %>
+    
+    <!-- Context & Metadata -->
+    <% if @error.context.present? || @error.metadata.present? %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5>Additional Information</h5>
+        </div>
+        <div class="card-body">
+          <% if @error.context.present? %>
+            <h6>Context:</h6>
+            <pre class="bg-light p-2 rounded mb-3"><%= @error.context %></pre>
+          <% end %>
+          
+          <% if @error.metadata.present? %>
+            <h6>Metadata:</h6>
+            <%= render_metadata(@error.metadata) %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    
+    <!-- Resolution -->
+    <% if @error.resolution.present? %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5>Resolution</h5>
+        </div>
+        <div class="card-body">
+          <p><%= simple_format(@error.resolution) %></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Assignment -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5>Assignment</h5>
+      </div>
+      <div class="card-body">
+        <dl>
+          <dt>Owner:</dt>
+          <dd><%= owner_link(@error.owner) %></dd>
+          
+          <dt>Team:</dt>
+          <dd><%= team_link(@error.team) %></dd>
+          
+          <dt>Project:</dt>
+          <dd><%= project_link(@error.project) %></dd>
+        </dl>
+        
+        <!-- Quick assign owner -->
+        <%= form_with model: @error, url: assign_owner_error_path(@error), method: :patch, local: true do |form| %>
+          <div class="mb-3">
+            <%= form.select :owner_id, 
+                           options_for_select([["Unassigned", ""]] + @available_owners.map { |o| [o.name, o.id] }, 
+                                            @error.owner_id), 
+                           {}, { class: "form-select" } %>
+          </div>
+          <%= form.submit "Assign Owner", class: "btn btn-outline-primary btn-sm" %>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Tags -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5>Tags</h5>
+      </div>
+      <div class="card-body">
+        <% if @error.tags.any? %>
+          <div class="mb-3">
+            <% @error.tags.each do |tag| %>
+              <span class="badge bg-secondary me-1 mb-1">
+                <%= tag.name %>
+                <%= link_to "×", remove_tag_error_path(@error, tag_name: tag.name), 
+                           method: :delete, class: "text-white ms-1",
+                           data: { confirm: "Remove this tag?" } %>
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+        
+        <!-- Add tag form -->
+        <%= form_with url: add_tag_error_path(@error), method: :post, local: true do |form| %>
+          <div class="input-group">
+            <%= form.text_field :tag_name, placeholder: "Add tag...", class: "form-control" %>
+            <%= form.submit "Add", class: "btn btn-outline-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Similar Errors -->
+    <% if @similar_errors.any? %>
+      <div class="card">
+        <div class="card-header">
+          <h5>Similar Errors</h5>
+        </div>
+        <div class="card-body">
+          <% @similar_errors.each do |error| %>
+            <div class="mb-2">
+              <%= link_to truncate(error.message, length: 40), error_path(error), 
+                         class: "text-decoration-none" %>
+              <br>
+              <small class="text-muted">
+                <%= time_ago_in_words(error.created_at) %> ago
+              </small>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,142 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Errors</h1>
+  <%= link_to "New Error", new_error_path, class: "btn btn-primary" %>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: errors_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.text_field "filter[q]", placeholder: "Search errors...", 
+                           value: params.dig(:filter, :q), 
+                           class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= form.select "filter[severity]", 
+                       options_for_select([["All Severities", ""]] + @severities.map { |s| [s.capitalize, s] }, 
+                                        params.dig(:filter, :severity)), 
+                       {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= form.select "filter[status]", 
+                       options_for_select([["All Statuses", ""]] + @statuses.map { |s| [s.humanize, s] }, 
+                                        params.dig(:filter, :status)), 
+                       {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= form.select "filter[priority]", 
+                       options_for_select([["All Priorities", ""]] + @priorities.map { |p| [p.capitalize, p] }, 
+                                        params.dig(:filter, :priority)), 
+                       {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= form.select "filter[owner_id]", 
+                       options_for_select([["All Owners", ""]] + @owners.map { |o| [o.name, o.id] }, 
+                                        params.dig(:filter, :owner_id)), 
+                       {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-1">
+        <%= form.submit "Filter", class: "btn btn-outline-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Errors Table -->
+<div class="card">
+  <div class="card-body">
+    <% if @errors.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Message</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Owner</th>
+              <th>Tags</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @errors.each do |error| %>
+              <tr>
+                <td>
+                  <%= error_icon(error.severity) %>
+                  <%= link_to truncate(error.message, length: 60), error_path(error), 
+                             class: "text-decoration-none" %>
+                  <% if error.exception_class.present? %>
+                    <br><small class="text-muted"><%= error.exception_class %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge bg-<%= severity_color(error.severity) %>">
+                    <%= error.severity.capitalize %>
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-<%= status_color(error.status) %>">
+                    <%= error.status.humanize %>
+                  </span>
+                </td>
+                <td>
+                  <% if error.priority.present? %>
+                    <span class="badge bg-<%= priority_color(error.priority) %>">
+                      <%= error.priority.capitalize %>
+                    </span>
+                  <% else %>
+                    <span class="text-muted">None</span>
+                  <% end %>
+                </td>
+                <td><%= owner_link(error.owner) %></td>
+                <td>
+                  <% error.tags.each do |tag| %>
+                    <%= tag_link(tag, css_class: "badge bg-secondary me-1") %>
+                  <% end %>
+                </td>
+                <td>
+                  <%= time_ago_with_tooltip(error.created_at) %>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to "View", error_path(error), class: "btn btn-outline-primary" %>
+                    <%= link_to "Edit", edit_error_path(error), class: "btn btn-outline-secondary" %>
+                    <% unless error.resolved? %>
+                      <%= link_to "Resolve", resolve_error_path(error), 
+                                 method: :patch, class: "btn btn-outline-success",
+                                 data: { confirm: "Are you sure?" } %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+          Showing <%= @errors.count %> of <%= @errors.total_count %> errors
+        </div>
+        <div>
+          <%= paginate @errors if respond_to?(:paginate) %>
+        </div>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <h5 class="text-muted">No errors found</h5>
+        <p class="text-muted">There are no errors matching your current filters.</p>
+        <%= link_to "Clear Filters", errors_path, class: "btn btn-outline-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

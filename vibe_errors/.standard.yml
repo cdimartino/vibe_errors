@@ -1,0 +1,24 @@
+# Standard Ruby configuration for VibeErrors
+# See https://github.com/testdouble/standard for configuration options
+
+# Ruby version
+ruby_version: 3.3
+
+# Ignore patterns
+ignore:
+  - 'db/**/*'
+  - 'bin/**/*'
+  - 'vendor/**/*'
+  - 'node_modules/**/*'
+  - 'tmp/**/*'
+  - 'log/**/*'
+  - 'spec/dummy/**/*'
+
+# Parallel processing
+parallel: true
+
+# Fix issues automatically where possible
+fix: false
+
+# Format output
+format: progress
