@@ -1,0 +1,62 @@
+version: "2"
+
+checks:
+  argument-count:
+    config:
+      threshold: 6
+  complex-logic:
+    config:
+      threshold: 10
+  file-lines:
+    config:
+      threshold: 300
+  method-complexity:
+    config:
+      threshold: 15
+  method-count:
+    config:
+      threshold: 20
+  method-lines:
+    config:
+      threshold: 50
+  nested-control-flow:
+    config:
+      threshold: 5
+  return-statements:
+    config:
+      threshold: 5
+  similar-code:
+    config:
+      threshold: 70
+  identical-code:
+    config:
+      threshold: 50
+
+plugins:
+  rubocop:
+    enabled: true
+    channel: "rubocop-1-57"
+    config:
+      file: ".rubocop.yml"
+  reek:
+    enabled: true
+    config:
+      file: ".reek.yml"
+  brakeman:
+    enabled: true
+  bundler-audit:
+    enabled: true
+
+exclude_patterns:
+  - "test/"
+  - "spec/"
+  - "vendor/"
+  - "node_modules/"
+  - "tmp/"
+  - "log/"
+  - "db/migrate/"
+  - "*.gemspec"
+  - "Gemfile"
+  - "Rakefile"
+  - "sample_app/"
+  - "lib/generators/vibe_errors/install/templates/"

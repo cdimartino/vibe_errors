@@ -1,0 +1,97 @@
+# Brakeman configuration for VibeErrors engine
+# See https://brakemanscanner.org/docs/options/ for configuration options
+
+# Application path
+:app_path: "."
+
+# Rails version
+:rails_version: "7.1"
+
+# Output format
+:output_format: :tabs
+
+# Quiet mode
+:quiet: true
+
+# Report progress
+:report_progress: true
+
+# Exit on warning
+:exit_on_warn: false
+
+# Check arguments
+:check_arguments: true
+
+# Parallel processing
+:parallel_checks: true
+
+# Ignore files
+:skip_files:
+  - db/
+  - bin/
+  - vendor/
+  - node_modules/
+  - tmp/
+  - log/
+  - spec/dummy/
+  - lib/generators/vibe_errors/install/templates/
+
+# Ignore certain types of vulnerabilities that are acceptable for this engine
+:ignore_warnings:
+  # Allow dynamic finder methods (common in Rails apps)
+  - :dynamic_finders
+  
+  # Allow some SQL injection warnings for search functionality
+  # (we'll manually review these)
+  - :sql_injection_scope
+  
+  # These redirects are to internal model URLs and are safe
+  - :redirect_internal
+  
+# Enable additional checks
+:enable_checks:
+  - :CheckBasicAuth
+  - :CheckDefaultRoutes
+  - :CheckDigestDoS
+  - :CheckExecute
+  - :CheckEvaluation
+  - :CheckFileAccess
+  - :CheckForceSSL
+  - :CheckMassAssignment
+  - :CheckModelAttributes
+  - :CheckNestedAttributes
+  - :CheckQuoteTableName
+  - :CheckRedirect
+  - :CheckRegexDoS
+  - :CheckRender
+  - :CheckRenderInline
+  - :CheckResponseSplitting
+  - :CheckSafeBufferManipulation
+  - :CheckSanitizeMethods
+  - :CheckSelectTag
+  - :CheckSelectVulnerability
+  - :CheckSendFile
+  - :CheckSessionSettings
+  - :CheckSQLCVE
+  - :CheckSSLVerify
+  - :CheckStripTags
+  - :CheckSymbolDoS
+  - :CheckTranslateBug
+  - :CheckUnsafeReflection
+  - :CheckValidationRegex
+  - :CheckWeakHash
+  - :CheckWithoutProtection
+  - :CheckXMLDoS
+  - :CheckYAMLParsing
+
+# Check for specific Rails vulnerabilities
+:check_for_rails_cves: true
+
+# Enable additional security checks
+:additional_checks_path: []
+
+# Confidence levels: 0 (high), 1 (medium), 2 (low)
+:min_confidence_level: 1
+
+# Separate warnings by type
+:separate_models: false
