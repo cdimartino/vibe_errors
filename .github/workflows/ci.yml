@@ -42,27 +42,27 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y sqlite3 libsqlite3-dev
     
-    - name: Set Rails version
+    - name: Set Rails version and Bundle install
       run: |
+        cd vibe_errors
+        # Remove Ruby version constraint for CI matrix testing
+        sed -i '/^ruby /d' Gemfile
         bundle config set --local gemfile Gemfile
         if [ "$RAILS_VERSION" != "7.1" ]; then
           # Update Gemfile for different Rails versions
           sed -i "s/rails.*$/rails '~> $RAILS_VERSION.0'/" Gemfile
         fi
-    
-    - name: Bundle install
-      run: |
         bundle install --jobs 4 --retry 3
     
     - name: Set up database
       run: |
-        cd test/dummy
+        cd vibe_errors/test/dummy
         bundle exec rails db:create
         bundle exec rails db:migrate
-        cd ../..
     
     - name: Run tests
       run: |
+        cd vibe_errors
         bundle exec rspec --format progress --format RspecJunitFormatter --out tmp/test-results/rspec.xml
     
     - name: Upload test results
@@ -70,14 +70,14 @@ jobs:
       if: always()
       with:
         name: test-results-ruby-${{ matrix.ruby-version }}-rails-${{ matrix.rails-version }}
-        path: tmp/test-results/
+        path: vibe_errors/tmp/test-results/
     
     - name: Upload coverage to CodeClimate
       if: matrix.ruby-version == '3.3' && matrix.rails-version == '7.1'
       uses: paambaati/codeclimate-action@v5.0.0
       with:
         coverageCommand: echo "Coverage already generated"
-        coverageLocations: coverage/lcov.info:lcov
+        coverageLocations: vibe_errors/coverage/lcov.info:lcov
 
   quality:
     runs-on: ubuntu-latest
@@ -97,26 +97,30 @@ jobs:
         sudo apt-get install -y sqlite3 libsqlite3-dev
     
     - name: Bundle install
-      run: bundle install --jobs 4 --retry 3
+      run: |
+        cd vibe_errors
+        # Remove Ruby version constraint for CI
+        sed -i '/^ruby /d' Gemfile
+        bundle install --jobs 4 --retry 3
     
     - name: Run StandardRB
-      run: bundle exec standardrb
+      run: cd vibe_errors && bundle exec standardrb
     
     - name: Run RuboCop
-      run: bundle exec rubocop --format github
+      run: cd vibe_errors && bundle exec rubocop --format github
     
     - name: Run Reek
-      run: bundle exec reek --format json > tmp/reek-report.json || true
+      run: cd vibe_errors && bundle exec reek --format json > tmp/reek-report.json || true
     
     - name: Run Brakeman
-      run: bundle exec brakeman --format json --output tmp/brakeman-report.json --quiet
+      run: cd vibe_errors && bundle exec brakeman --format json --output tmp/brakeman-report.json --quiet
     
     - name: Upload quality reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: quality-reports
-        path: tmp/
+        path: vibe_errors/tmp/
 
   security:
     runs-on: ubuntu-latest
@@ -136,21 +140,26 @@ jobs:
         sudo apt-get install -y sqlite3 libsqlite3-dev
     
     - name: Bundle install
-      run: bundle install --jobs 4 --retry 3
+      run: |
+        cd vibe_errors
+        # Remove Ruby version constraint for CI
+        sed -i '/^ruby /d' Gemfile
+        bundle install --jobs 4 --retry 3
     
     - name: Run bundle audit
       run: |
+        cd vibe_errors
         gem install bundler-audit
         bundle audit --update
     
     - name: Run Brakeman security scan
-      run: bundle exec brakeman --format sarif --output brakeman-report.sarif --quiet
+      run: cd vibe_errors && bundle exec brakeman --format sarif --output brakeman-report.sarif --quiet
     
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: brakeman-report.sarif
+        sarif_file: vibe_errors/brakeman-report.sarif
 
   compatibility:
     runs-on: ubuntu-latest
@@ -209,8 +218,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y sqlite3 libsqlite3-dev
     
-    - name: Bundle install
-      run: bundle install --jobs 4 --retry 3
+    - name: Bundle install vibe_errors engine
+      run: |
+        cd vibe_errors
+        # Remove Ruby version constraint for CI
+        sed -i '/^ruby /d' Gemfile
+        bundle install --jobs 4 --retry 3
     
     - name: Test sample app integration
       run: |
@@ -253,6 +266,9 @@ jobs:
     
     - name: Build gem
       run: |
+        cd vibe_errors
+        # Remove Ruby version constraint for CI
+        sed -i '/^ruby /d' Gemfile
         bundle install
         gem build vibe_errors.gemspec
     
@@ -260,11 +276,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vibe_errors-gem
-        path: vibe_errors-*.gem
+        path: vibe_errors/vibe_errors-*.gem
     
     - name: Publish to RubyGems
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
+        cd vibe_errors
         mkdir -p ~/.gem
         echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
         chmod 600 ~/.gem/credentials
