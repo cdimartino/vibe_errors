@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-gem "rails", "~> 7.1.0"
+gem "rails", "~> 8.0.2"
 gem "sqlite3", "~> 1.4"
 
 group :development, :test do
