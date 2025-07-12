@@ -74,7 +74,7 @@ jobs:
     
     - name: Upload coverage to CodeClimate
       if: matrix.ruby-version == '3.3' && matrix.rails-version == '7.1'
-      uses: paambaati/codeclimate-action@v5.0.0
+      uses: paambaati/codeclimate-action@v9.0.0
       with:
         coverageCommand: echo "Coverage already generated"
         coverageLocations: vibe_errors/coverage/lcov.info:lcov
