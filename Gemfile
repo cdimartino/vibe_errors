@@ -10,7 +10,7 @@ group :development, :test do
   gem "standard", ">= 1.35.1"
   gem "rubocop", "~> 1.57"
   gem "reek", "~> 6.1"
-  gem "brakeman", "~> 6.0"
+  gem "brakeman", "~> 7.0"
   gem "simplecov", "~> 0.22"
 end
 
