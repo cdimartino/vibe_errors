@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
 
   # Support Rails 4.2+ as specified in requirements
   spec.add_dependency "rails", ">= 4.2.0"
-  spec.add_dependency "sqlite3", "~> 1.4"
+  spec.add_dependency "sqlite3", ">= 1.4", "< 3.0"
 
   spec.add_development_dependency "rspec-rails", "~> 6.0"
   spec.add_development_dependency "factory_bot_rails", "~> 6.4"
