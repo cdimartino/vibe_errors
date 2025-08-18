@@ -24,7 +24,7 @@ jobs:
       CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
       
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby ${{ matrix.ruby-version }}
       uses: ruby/setup-ruby@v1
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
@@ -168,7 +168,7 @@ jobs:
         rails-version: ['4.2', '5.0', '5.1', '5.2', '6.0', '6.1', '7.0', '7.1']
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
@@ -205,7 +205,7 @@ jobs:
     needs: [test, quality, security]
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
@@ -256,7 +256,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
