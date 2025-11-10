@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "standard", ">= 1.35.1"
   spec.add_development_dependency "rubocop", "~> 1.57"
   spec.add_development_dependency "reek", "~> 6.1"
-  spec.add_development_dependency "brakeman", "~> 6.0"
+  spec.add_development_dependency "brakeman", "~> 7.1"
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "shoulda-matchers", "~> 6.0"
   spec.add_development_dependency "database_cleaner-active_record", "~> 2.1"
