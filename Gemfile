@@ -8,7 +8,7 @@ group :development, :test do
   gem "factory_bot_rails", "~> 6.4"
   gem "faker", "~> 3.2"
   gem "standard", ">= 1.35.1"
-  gem "rubocop", "~> 1.57"
+  gem "rubocop", "~> 1.81"
   gem "reek", "~> 6.1"
   gem "brakeman", "~> 6.0"
   gem "simplecov", "~> 0.22"
