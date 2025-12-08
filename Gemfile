@@ -6,7 +6,7 @@ gem "sqlite3", "~> 1.4"
 group :development, :test do
   gem "rspec-rails", "~> 6.0"
   gem "factory_bot_rails", "~> 6.4"
-  gem "faker", "~> 3.2"
+  gem "faker", "~> 3.5"
   gem "standard", ">= 1.35.1"
   gem "rubocop", "~> 1.57"
   gem "reek", "~> 6.1"
