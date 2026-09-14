@@ -11,7 +11,7 @@ group :development, :test do
   gem "rubocop", "~> 1.57"
   gem "reek", "~> 6.1"
   gem "brakeman", "~> 6.0"
-  gem "simplecov", "~> 0.22"
+  gem "simplecov", "~> 1.2"
 end
 
 group :test do
